@@ -1,4 +1,3 @@
-
 "use client"
 
 import type React from "react"
@@ -430,44 +429,62 @@ export default function KnowledgeBasePage() {
   };
 
   const handleRefreshFromEmail = async () => {
-    setIsRefreshing(true)
+    setIsRefreshing(true);
+    
+    try {
+      // Get the current session
+      const { data: { session } } = await supabase.auth.getSession();
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+      if (!session) {
+        throw new Error('You must be logged in to refresh from email');
+      }
 
-    const newEmailEntry = {
-      id: Date.now().toString(),
-      title: "Latest Research Findings on Learning Methodologies",
-      source: "updates@research-institute.org",
-      summary:
-        "This email contains the latest research findings on effective learning methodologies, including spaced repetition, active recall, and interleaving. The studies show significant improvements in retention when these techniques are combined.",
-      summaryJson: {
-        key_points: [
-          "Spaced repetition enhances long-term memory",
-          "Active recall is more effective than passive review",
-          "Interleaving improves ability to differentiate concepts"
-        ],
-        main_ideas: [
-          "Combined learning techniques show synergistic effects",
-          "Research validates effectiveness of modern study methods"
-        ],
-        insights: [
-          "Implementation difficulty correlates with effectiveness"
-        ]
-      },
-      date: new Date().toISOString().split("T")[0],
-      type: "email",
-      category: "Education",
+      // Call our API endpoint with the auth token
+      const response = await fetch('/api/refresh-from-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to refresh from email');
+      }
+
+      const data = await response.json();
+      
+      // Refresh the knowledge base entries
+      if (user?.id) {
+        await fetchKnowledgeBaseEntries(user.id);
+      }
+
+      // Show success message with details
+      toast({
+        title: "Email Refresh Complete",
+        description: data.message || `Processed ${data.processed} URLs from emails`,
+      });
+      
+      // If there were any errors, show a more detailed message
+      if (data.errors > 0) {
+        toast({
+          title: `${data.errors} errors occurred`,
+          description: "Some URLs could not be processed. Check the console for details.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error refreshing from email:', error);
+      toast({
+        title: "Error refreshing from email",
+        description: error.message || "Failed to refresh from email. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshing(false);
     }
-
-    setEntries([newEmailEntry, ...entries])
-    setIsRefreshing(false)
-
-    toast({
-      title: "Email content refreshed",
-      description: "New content from your emails has been added to your knowledge base.",
-    })
-  }
+  };
 
   const handleDeleteEntry = async (id: string) => {
     try {
@@ -962,10 +979,3 @@ export default function KnowledgeBasePage() {
 
 // Add this component to your JSX, just before the closing div of the main container
 // <DebugEntries entries={entries} />
-
-
-
-
-
-
-

@@ -1,4 +1,3 @@
-
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
@@ -127,6 +126,10 @@ export async function POST(request: Request) {
       // Extract text from HTML to reduce token usage
       const textContent = extractTextFromHtml(htmlContent);
 
+      // Extract title from HTML
+      const titleMatch = htmlContent.match(/<title>(.*?)<\/title>/i);
+      const title = titleMatch ? titleMatch[1] : new URL(url).hostname || 'Untitled Page';
+
       // Limit the text content to avoid token limit issues
       const truncatedText = textContent.substring(0, 15000); // Limit to ~15K characters
 
@@ -226,6 +229,7 @@ export async function POST(request: Request) {
               summary_text TEXT NOT NULL,
               summary_json JSONB NOT NULL,
               category TEXT NOT NULL DEFAULT 'Uncategorized',
+              title TEXT NOT NULL DEFAULT '',
               created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
               updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -280,7 +284,8 @@ export async function POST(request: Request) {
           raw_text: aiContent.raw_text,
           summary_text: aiContent.summary_text,
           summary_json: summaryJsonData, // Use the parsed or original object
-          category: aiContent.category
+          category: aiContent.category,
+          title: title // Add the extracted title
         })
         .select()
         .single();
@@ -314,7 +319,3 @@ export async function POST(request: Request) {
     }, { status: 500 });
   }
 }
-
-
-
-

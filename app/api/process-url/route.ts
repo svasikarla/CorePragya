@@ -88,6 +88,7 @@ export async function POST(request: Request) {
 
     // Fetch content from the URL with timeout and error handling
     let htmlContent;
+    let title = 'Untitled Page'; // Declare title at a higher scope with default value
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
@@ -112,6 +113,10 @@ export async function POST(request: Request) {
       if (!htmlContent || htmlContent.trim().length === 0) {
         return NextResponse.json({ error: 'Empty content from URL' }, { status: 400 });
       }
+
+      // Extract title from HTML
+      const titleMatch = htmlContent.match(/<title>(.*?)<\/title>/i);
+      title = titleMatch ? titleMatch[1].trim() : new URL(url).hostname || 'Untitled Page'; // Assign to the higher-scoped variable
     } catch (error) {
       const fetchError = error as Error;
       console.error('Error fetching URL:', fetchError);
@@ -125,10 +130,6 @@ export async function POST(request: Request) {
     try {
       // Extract text from HTML to reduce token usage
       const textContent = extractTextFromHtml(htmlContent);
-
-      // Extract title from HTML
-      const titleMatch = htmlContent.match(/<title>(.*?)<\/title>/i);
-      const title = titleMatch ? titleMatch[1] : new URL(url).hostname || 'Untitled Page';
 
       // Limit the text content to avoid token limit issues
       const truncatedText = textContent.substring(0, 15000); // Limit to ~15K characters

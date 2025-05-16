@@ -798,7 +798,7 @@ export default function KnowledgeBasePage() {
               </Link>
               <Link 
                 href="/knowledge-base" 
-                className="text-sm font-medium text-indigo-700 border-b-2 border-indigo-700 pb-1"
+                className="text-sm font-medium transition-colors hover:text-foreground"
               >
                 Knowledge Base
               </Link>
@@ -1006,6 +1006,7 @@ export default function KnowledgeBasePage() {
 
 // Add this component to your JSX, just before the closing div of the main container
 // <DebugEntries entries={entries} />
+
 
 
 

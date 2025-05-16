@@ -3,14 +3,25 @@
 
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Brain, LogOut } from "lucide-react"
+import { Brain, LogOut, BarChart, Database, Lightbulb, Calendar } from "lucide-react"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import CategoryDistributionChart from "@/components/dashboard/CategoryDistributionChart"
+import KnowledgeGrowthChart from "@/components/dashboard/KnowledgeGrowthChart"
+import AIInsights from "@/components/dashboard/AIInsights"
 
 export default function Dashboard() {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [knowledgeStats, setKnowledgeStats] = useState({
+    totalEntries: 0,
+    categoryCounts: {},
+    recentEntries: [],
+    topCategory: 'None',
+    topCategoryCount: 0
+  })
   const router = useRouter()
 
   useEffect(() => {
@@ -21,8 +32,8 @@ export default function Dashboard() {
         if (!user) {
           router.push('/login')
         } else {
-          // Redirect to knowledge-base instead of staying on dashboard
-          router.push('/knowledge-base')
+          // Fetch knowledge stats instead of redirecting
+          fetchKnowledgeStats(user.id)
         }
       } catch (error) {
         console.error('Error fetching user:', error)
@@ -41,8 +52,8 @@ export default function Dashboard() {
           router.push('/login')
         } else if (session?.user) {
           setUser(session.user)
-          // Redirect to knowledge-base
-          router.push('/knowledge-base')
+          // Fetch knowledge stats instead of redirecting
+          fetchKnowledgeStats(session.user.id)
         }
       }
     )
@@ -51,6 +62,40 @@ export default function Dashboard() {
       subscription.unsubscribe()
     }
   }, [router])
+
+  const fetchKnowledgeStats = async (userId) => {
+    try {
+      // Fetch knowledge base entries
+      const { data, error } = await supabase
+        .from('knowledgebase')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Calculate statistics
+      const categoryCounts = data.reduce((acc, entry) => {
+        const category = entry.category || 'Uncategorized';
+        acc[category] = (acc[category] || 0) + 1;
+        return acc;
+      }, {});
+
+      // Find top category
+      const topCategoryEntry = Object.entries(categoryCounts)
+        .sort((a, b) => b[1] - a[1])[0] || ['None', 0];
+
+      setKnowledgeStats({
+        totalEntries: data.length,
+        categoryCounts,
+        recentEntries: data.slice(0, 5),
+        topCategory: topCategoryEntry[0],
+        topCategoryCount: topCategoryEntry[1]
+      });
+    } catch (error) {
+      console.error('Error fetching knowledge stats:', error);
+    }
+  };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -78,7 +123,7 @@ export default function Dashboard() {
           <nav className="flex flex-1 items-center justify-end space-x-4">
             <Link
               href="/dashboard"
-              className="text-sm font-medium transition-colors hover:text-foreground"
+              className="text-sm font-medium text-foreground"
             >
               Dashboard
             </Link>
@@ -105,36 +150,108 @@ export default function Dashboard() {
       <main className="flex-1 bg-slate-50">
         <div className="container py-8">
           <div className="mb-8">
-            <h1 className="font-playfair text-3xl font-bold tracking-tight md:text-4xl">Welcome to your Dashboard</h1>
+            <h1 className="font-playfair text-3xl font-bold tracking-tight md:text-4xl">Knowledge Analytics</h1>
             <p className="mt-2 text-muted-foreground">
-              Hello, {user?.email}! Start exploring your learning journey with CorePragya.
+              Hello, {user?.email}! Here's an overview of your knowledge collection.
             </p>
           </div>
           
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {/* Dashboard cards would go here */}
-            <div className="rounded-lg border bg-card p-6 shadow-sm">
-              <h3 className="font-playfair text-xl font-bold">Recent Notes</h3>
-              <p className="text-sm text-muted-foreground">You haven't created any notes yet.</p>
-              <Button className="mt-4" variant="outline">Create Note</Button>
-            </div>
+          {/* Analytics Overview */}
+          <div className="grid gap-6 mb-8 md:grid-cols-3">
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-4">
+                  <div className="h-12 w-12 bg-indigo-100 rounded-full flex items-center justify-center">
+                    <Database className="h-6 w-6 text-indigo-700" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Entries</p>
+                    <h3 className="text-2xl font-bold">{knowledgeStats.totalEntries}</h3>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
             
-            <div className="rounded-lg border bg-card p-6 shadow-sm">
-              <h3 className="font-playfair text-xl font-bold">Study Progress</h3>
-              <p className="text-sm text-muted-foreground">Track your learning progress here.</p>
-              <Button className="mt-4" variant="outline">View Progress</Button>
-            </div>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-4">
+                  <div className="h-12 w-12 bg-indigo-100 rounded-full flex items-center justify-center">
+                    <BarChart className="h-6 w-6 text-indigo-700" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Top Category</p>
+                    <h3 className="text-2xl font-bold">{knowledgeStats.topCategory}</h3>
+                    <p className="text-xs text-muted-foreground">
+                      {knowledgeStats.topCategoryCount} entries
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
             
-            <div className="rounded-lg border bg-card p-6 shadow-sm">
-              <h3 className="font-playfair text-xl font-bold">Flashcards</h3>
-              <p className="text-sm text-muted-foreground">Create and review flashcards.</p>
-              <Button className="mt-4" variant="outline">Create Flashcards</Button>
-            </div>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-4">
+                  <div className="h-12 w-12 bg-indigo-100 rounded-full flex items-center justify-center">
+                    <Calendar className="h-6 w-6 text-indigo-700" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Last Updated</p>
+                    <h3 className="text-lg font-bold">
+                      {knowledgeStats.recentEntries[0]?.created_at 
+                        ? new Date(knowledgeStats.recentEntries[0].created_at).toLocaleDateString() 
+                        : 'No entries'}
+                    </h3>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
+          
+          {/* Category Distribution Chart */}
+          <div className="grid gap-6 mb-8 md:grid-cols-2">
+            <Card className="col-span-1">
+              <CardHeader>
+                <CardTitle>Category Distribution</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-80">
+                  <CategoryDistributionChart data={knowledgeStats.categoryCounts} />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="col-span-1">
+              <CardHeader>
+                <CardTitle>Knowledge Growth</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-80">
+                  <KnowledgeGrowthChart entries={knowledgeStats.recentEntries} />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          {/* AI Insights */}
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Lightbulb className="mr-2 h-5 w-5 text-indigo-600" />
+                AI Insights
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <AIInsights knowledgeData={knowledgeStats} />
+            </CardContent>
+          </Card>
         </div>
       </main>
     </div>
   )
 }
+
+
+
 
 

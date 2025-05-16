@@ -16,21 +16,35 @@ export default function KnowledgeGrowthChart({ entries }) {
     // Process data to get entries by date
     const dateMap = new Map()
     const now = new Date()
-    const thirtyDaysAgo = new Date(now.setDate(now.getDate() - 30))
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(now.getDate() - 30) // Avoid modifying 'now' directly
     
     // Initialize all dates in the last 30 days
     for (let i = 0; i < 30; i++) {
       const date = new Date(thirtyDaysAgo)
-      date.setDate(date.getDate() + i)
+      date.setDate(thirtyDaysAgo.getDate() + i)
       const dateString = date.toISOString().split('T')[0]
       dateMap.set(dateString, 0)
     }
     
     // Count entries by date
     entries.forEach(entry => {
-      const dateString = new Date(entry.created_at).toISOString().split('T')[0]
-      if (dateMap.has(dateString)) {
-        dateMap.set(dateString, dateMap.get(dateString) + 1)
+      // Add validation to ensure created_at is valid
+      if (!entry.created_at) return
+      
+      try {
+        const entryDate = new Date(entry.created_at)
+        
+        // Check if the date is valid
+        if (isNaN(entryDate.getTime())) return
+        
+        const dateString = entryDate.toISOString().split('T')[0]
+        if (dateMap.has(dateString)) {
+          dateMap.set(dateString, dateMap.get(dateString) + 1)
+        }
+      } catch (error) {
+        console.error('Invalid date format in entry:', entry.id, error)
+        // Skip this entry and continue processing others
       }
     })
     

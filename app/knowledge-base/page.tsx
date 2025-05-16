@@ -554,7 +554,7 @@ export default function KnowledgeBasePage() {
     )
   }
 
-  // Add a visual dashboard at the top with stats
+  // Improve the KnowledgeStats component for better data visualization
   const KnowledgeStats = () => {
     const totalEntries = entries.length;
     const categoryCounts = entries.reduce((acc, entry) => {
@@ -562,106 +562,112 @@ export default function KnowledgeBasePage() {
       return acc;
     }, {});
     const topCategory = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'None';
+    const topCategoryCount = topCategory !== 'None' ? categoryCounts[topCategory] : 0;
 
     return (
-      <div className="grid gap-3 mb-6 grid-cols-3">
-        <Card className="bg-gradient-to-br from-indigo-50 to-white">
-          <CardContent className="p-3">
-            <div className="flex justify-between items-center">
+      <Card className="mb-6">
+        <CardContent className="p-4">
+          <h3 className="text-sm font-semibold mb-3">Knowledge Overview</h3>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="flex items-center space-x-3">
+              <div className="h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                <Database className="h-5 w-5 text-indigo-700" />
+              </div>
               <div>
-                <p className="text-xs font-medium text-muted-foreground">Total Entries</p>
+                <p className="text-xs text-muted-foreground">Total Entries</p>
                 <h3 className="text-xl font-bold">{totalEntries}</h3>
               </div>
-              <div className="h-8 w-8 bg-indigo-100 rounded-full flex items-center justify-center">
-                <Database className="h-4 w-4 text-indigo-700" />
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              <div className="h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                <BarChart className="h-5 w-5 text-indigo-700" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Top Category</p>
+                <div className="flex items-center">
+                  <h3 className="text-sm font-bold truncate">{topCategory}</h3>
+                  {topCategoryCount > 0 && (
+                    <span className="ml-1.5 text-xs text-muted-foreground">({topCategoryCount})</span>
+                  )}
+                </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-indigo-50 to-white">
-          <CardContent className="p-3">
-            <div className="flex justify-between items-center">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">Top Category</p>
-                <h3 className="text-sm font-bold truncate">{topCategory}</h3>
+            
+            <div className="flex items-center space-x-3">
+              <div className="h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                <Clock className="h-5 w-5 text-indigo-700" />
               </div>
-              <div className="h-8 w-8 bg-indigo-100 rounded-full flex items-center justify-center">
-                <BarChart className="h-4 w-4 text-indigo-700" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-indigo-50 to-white">
-          <CardContent className="p-3">
-            <div className="flex justify-between items-center">
               <div>
-                <p className="text-xs font-medium text-muted-foreground">Last Updated</p>
+                <p className="text-xs text-muted-foreground">Last Updated</p>
                 <h3 className="text-sm font-bold">
                   {entries.length > 0 
                     ? new Date(Math.max(...entries.map(e => new Date(e.date).getTime()))).toLocaleDateString() 
                     : 'Never'}
                 </h3>
               </div>
-              <div className="h-8 w-8 bg-indigo-100 rounded-full flex items-center justify-center">
-                <Clock className="h-4 w-4 text-indigo-700" />
-              </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
     );
   };
 
-  // Dynamic category filtering - only show categories that exist in the knowledge base
+  // Improve the SearchAndFilters component for better usability
   const SearchAndFilters = () => {
-    // Get unique categories from entries
     const uniqueCategories = [...new Set(entries.map(entry => entry.category))].filter(Boolean);
     
     return (
       <div className="mb-4 space-y-3">
-        <div className="flex flex-col space-y-2 md:flex-row md:items-center md:justify-between md:space-y-0">
-          <h2 className="font-rasa text-lg font-bold">Saved Knowledge</h2>
-          <div className="flex flex-col space-y-2 sm:flex-row sm:space-x-2 sm:space-y-0">
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search knowledge..."
-                className="pl-8 h-9 text-sm"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
+        <div className="flex flex-col space-y-3 md:flex-row md:items-center md:justify-between md:space-y-0">
+          <div className="relative w-full md:w-64">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search knowledge..."
+              className="pl-9 h-10"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          
+          <div className="flex items-center space-x-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="w-full sm:w-auto h-8" size="sm">
-                  <SlidersHorizontal className="mr-1 h-3 w-3" />
-                  <span className="text-xs">Sort & Filter</span>
+                <Button variant="outline" className="h-10">
+                  <Filter className="mr-2 h-4 w-4" />
+                  <span>Type: {typeFilter === 'all' ? 'All' : typeFilter}</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel className="text-xs">Sort By</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setSortOrder('newest')} className="text-xs">
-                  Newest First
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSortOrder('oldest')} className="text-xs">
-                  Oldest First
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSortOrder('popular')} className="text-xs">
-                  Most Viewed
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel className="text-xs">Filter Type</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setTypeFilter('all')} className="text-xs">
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem onClick={() => setTypeFilter('all')}>
                   All Types
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTypeFilter('url')} className="text-xs">
-                  Web Articles
+                <DropdownMenuItem onClick={() => setTypeFilter('url')}>
+                  Web Content
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTypeFilter('email')} className="text-xs">
+                <DropdownMenuItem onClick={() => setTypeFilter('email')}>
                   Email Content
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="h-10">
+                  <SlidersHorizontal className="mr-2 h-4 w-4" />
+                  <span>Sort: {sortOrder === 'newest' ? 'Newest' : sortOrder === 'oldest' ? 'Oldest' : 'Popular'}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem onClick={() => setSortOrder('newest')}>
+                  Newest First
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortOrder('oldest')}>
+                  Oldest First
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortOrder('popular')}>
+                  Most Viewed
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -669,14 +675,14 @@ export default function KnowledgeBasePage() {
         </div>
         
         {uniqueCategories.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-2">
+          <div className="flex flex-wrap gap-2 mt-2">
             <Button
               variant={selectedCategory === null ? "default" : "outline"}
               size="sm"
               onClick={() => setSelectedCategory(null)}
-              className={`text-xs h-7 px-2.5 rounded-full ${selectedCategory === null ? 'bg-indigo-600 hover:bg-indigo-700' : 'border-indigo-200 text-indigo-700 hover:bg-indigo-50'}`}
+              className={`h-8 px-3 rounded-full ${selectedCategory === null ? 'bg-indigo-600 hover:bg-indigo-700' : ''}`}
             >
-              All
+              All Categories
             </Button>
             {uniqueCategories.map(category => (
               <Button
@@ -684,11 +690,7 @@ export default function KnowledgeBasePage() {
                 variant={selectedCategory === category ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedCategory(category)}
-                className={`text-xs h-7 px-2.5 rounded-full ${
-                  selectedCategory === category 
-                    ? 'bg-indigo-600 hover:bg-indigo-700' 
-                    : `border-${getCategoryColor(category).split(' ')[0].replace('bg-', '')} ${getCategoryColor(category).split(' ')[1]}`
-                }`}
+                className="h-8 px-3 rounded-full"
               >
                 {category}
               </Button>
@@ -781,86 +783,100 @@ export default function KnowledgeBasePage() {
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center">
-          <div className="mr-4 flex">
-            <Link href="/" className="flex items-center space-x-2">
+        <div className="container flex h-16 items-center justify-between">
+          <div className="flex items-center">
+            <Link href="/" className="flex items-center space-x-2 mr-6">
               <Brain className="h-6 w-6 text-indigo-700" />
               <span className="inline-block font-rasa text-xl font-bold">CorePragya</span>
             </Link>
+            <nav className="hidden md:flex items-center space-x-6">
+              <Link
+                href="/dashboard"
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Dashboard
+              </Link>
+              <Link 
+                href="/knowledge-base" 
+                className="text-sm font-medium text-indigo-700 border-b-2 border-indigo-700 pb-1"
+              >
+                Knowledge Base
+              </Link>
+              <Link
+                href="/settings"
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Settings
+              </Link>
+            </nav>
           </div>
-          <nav className="flex flex-1 items-center justify-end space-x-4">
-            <Link
-              href="/dashboard"
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-            >
-              Dashboard
-            </Link>
-            <Link href="/knowledge-base" className="text-sm font-medium transition-colors hover:text-foreground">
-              Knowledge Base
-            </Link>
-            <Link
-              href="#"
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-            >
-              Settings
-            </Link>
-            <Button variant="outline" size="sm" onClick={handleSignOut}>
-              <LogOut className="mr-2 h-4 w-4" />
-              Sign Out
-            </Button>
-          </nav>
+          
+          <div className="flex items-center space-x-2">
+            <span className="hidden md:inline-block text-sm text-muted-foreground mr-2">
+              {userMetadata.email}
+            </span>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
+                  <div className="h-7 w-7 rounded-full bg-indigo-100 flex items-center justify-center">
+                    <span className="text-xs font-medium text-indigo-700">
+                      {userMetadata.email.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem disabled>
+                  <Mail className="mr-2 h-4 w-4" />
+                  {userMetadata.email}
+                </DropdownMenuItem>
+                <DropdownMenuItem disabled>
+                  <Calendar className="mr-2 h-4 w-4" />
+                  Joined: {userMetadata.createdAt}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </header>
 
       <main className="flex-1 bg-slate-50">
-        <div className="container py-4 px-4 sm:px-6">
-          {/* User information card - moved above the heading */}
-          <div className="mb-6 rounded-lg border bg-card p-4 shadow-sm">
-            <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-              <div className="flex items-center space-x-2">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">{userMetadata.email}</span>
-              </div>
-              <div className="flex flex-col space-y-1 sm:flex-row sm:space-x-4 sm:space-y-0 text-xs text-muted-foreground">
-                <div className="flex items-center">
-                  <span className="font-medium mr-1">Account created:</span> {userMetadata.createdAt}
-                </div>
-                <div className="flex items-center">
-                  <span className="font-medium mr-1">Last login:</span> {userMetadata.lastSignInAt}
-                </div>
-              </div>
-            </div>
-          </div>
-
+        <div className="container py-6 px-4 sm:px-6">
           <div className="mb-6">
-            <h1 className="font-rasa text-2xl font-bold tracking-tight md:text-3xl">Your Knowledge Hub</h1>
+            <h1 className="font-rasa text-2xl font-bold tracking-tight md:text-3xl">Knowledge Hub</h1>
             <p className="mt-1 text-sm text-muted-foreground">
               Access, manage, and explore your saved content from across the web and your emails.
             </p>
           </div>
 
-          {/* Knowledge Stats Dashboard */}
+          {/* Knowledge Stats Dashboard - only show if entries exist */}
           {entries.length > 0 && <KnowledgeStats />}
 
-          <div className="mb-8 grid gap-6 md:grid-cols-2">
+          <div className="grid gap-6 mb-8 md:grid-cols-2">
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle>Add New Content</CardTitle>
+                <CardTitle className="flex items-center">
+                  <Globe className="mr-2 h-5 w-5 text-indigo-600" />
+                  Add Web Content
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleAddUrl} className="flex space-x-2">
-                  <div className="relative flex-1">
-                    <Globe className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id="url-input"
-                      type="url"
-                      placeholder="Paste a URL to summarize..."
-                      className="pl-10"
-                      value={url}
-                      onChange={(e) => setUrl(e.target.value)}
-                      required
-                    />
-                  </div>
+                  <Input
+                    id="url-input"
+                    type="url"
+                    placeholder="Paste a URL to summarize..."
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    required
+                  />
                   <Button type="submit" disabled={isLoading}>
                     {isLoading ? (
                       <>
@@ -880,7 +896,10 @@ export default function KnowledgeBasePage() {
 
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle>Refresh from Email</CardTitle>
+                <CardTitle className="flex items-center">
+                  <Mail className="mr-2 h-5 w-5 text-indigo-600" />
+                  Import from Email
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="mb-4 text-sm text-muted-foreground">
@@ -909,62 +928,70 @@ export default function KnowledgeBasePage() {
           {filteredEntries.length === 0 ? (
             <EmptyState />
           ) : (
-            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {filteredEntries.map((entry) => (
                 <Card 
                   key={entry.id} 
-                  className="overflow-hidden transition-all hover:shadow-md group border-l-4 flex flex-col h-full"
+                  className="overflow-hidden transition-all hover:shadow-md flex flex-col h-full border-l-4"
                   style={{ borderLeftColor: getCategoryColorValue(entry.category) }}
                 >
-                  <CardHeader className="p-3 pb-1">
+                  <CardHeader className="p-4 pb-2">
                     <div className="flex items-start justify-between">
-                      <CardTitle className="line-clamp-2 text-sm font-medium group-hover:text-indigo-700 transition-colors">
+                      <CardTitle className="line-clamp-2 text-base font-medium group-hover:text-indigo-700 transition-colors">
                         {entry.title}
                       </CardTitle>
-                      <div className="flex space-x-1 ml-1 shrink-0">
+                      <div className="flex space-x-1 ml-2 shrink-0">
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6 text-muted-foreground hover:text-amber-500"
+                          className="h-7 w-7 text-muted-foreground hover:text-amber-500"
                           onClick={() => handleBookmarkEntry(entry.id)}
                         >
-                          <Bookmark className="h-3 w-3" />
+                          <Bookmark className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
                           onClick={() => handleDeleteEntry(entry.id)}
                         >
-                          <Trash2 className="h-3 w-3" />
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
-                    <div className="flex flex-wrap gap-1 mt-1.5">
-                      <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium ${getCategoryColor(entry.category)}`}>
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getCategoryColor(entry.category)}`}>
                         {entry.category}
                       </span>
+                      {entry.type === "url" ? (
+                        <Link 
+                          href={entry.source} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 hover:bg-gray-200 transition-colors"
+                        >
+                          <Globe className="mr-1 h-3 w-3" /> Web
+                        </Link>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800">
+                          <Mail className="mr-1 h-3 w-3" /> Email
+                        </span>
+                      )}
                     </div>
                   </CardHeader>
-                  <CardContent className="p-3 pt-0 flex-grow">
+                  <CardContent className="p-4 pt-0 flex-grow">
                     {entry.summaryJson ? (
                       <SummaryBullets summaryJson={entry.summaryJson} />
                     ) : (
-                      <p className="line-clamp-3 text-xs text-muted-foreground">{entry.summary}</p>
+                      <p className="line-clamp-3 text-sm text-muted-foreground">{entry.summary}</p>
                     )}
                   </CardContent>
-                  <CardFooter className="p-3 pt-0 flex justify-between items-center border-t mt-auto">
-                    <div className="flex items-center text-[10px] text-muted-foreground overflow-hidden">
-                      {entry.type === "url" ? 
-                        <Globe className="mr-1 h-2.5 w-2.5 shrink-0" /> : 
-                        <Mail className="mr-1 h-2.5 w-2.5 shrink-0" />
-                      }
-                      <span className="truncate max-w-[100px]">{entry.source}</span>
-                      <span className="mx-1 text-muted-foreground">•</span>
-                      <span className="whitespace-nowrap">{new Date(entry.date).toLocaleDateString()}</span>
+                  <CardFooter className="p-4 pt-2 flex justify-between items-center border-t mt-auto">
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(entry.date).toLocaleDateString()}
                     </div>
-                    <Button variant="link" className="h-6 p-0 text-indigo-700 text-xs">
-                      Read More <ChevronRight className="ml-1 h-2 w-2" />
+                    <Button variant="link" className="h-8 p-0 text-indigo-700">
+                      Read More <ChevronRight className="ml-1 h-3 w-3" />
                     </Button>
                   </CardFooter>
                 </Card>
@@ -979,3 +1006,9 @@ export default function KnowledgeBasePage() {
 
 // Add this component to your JSX, just before the closing div of the main container
 // <DebugEntries entries={entries} />
+
+
+
+
+
+

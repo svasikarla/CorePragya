@@ -59,7 +59,7 @@ export default function LandingPage() {
                 Unlock Deeper Understanding with CorePragya
               </h1>
               <p className="mx-auto max-w-[700px] text-lg text-muted-foreground md:text-xl">
-                Harness the power of AI and ancient wisdom to enhance your knowledge retention and comprehension.
+                Harness the power of AI and Knowledge to enhance your wisdom by retention and comprehension.
               </p>
             </div>
             <div className="space-x-4">

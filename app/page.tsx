@@ -52,34 +52,43 @@ export default function LandingPage() {
       </header>
       <main className="flex-1">
         <section className="relative">
-          <div className="absolute inset-0 bg-[url('/placeholder.svg?height=800&width=1600')] bg-cover bg-center opacity-5"></div>
-          <div className="container relative flex flex-col items-center justify-center space-y-8 py-24 text-center md:py-32 lg:py-40">
-            <div className="space-y-4">
-              <h1 className="font-playfair text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl">
-                Unlock Deeper Understanding with CorePragya
-              </h1>
-              <p className="mx-auto max-w-[700px] text-lg text-muted-foreground md:text-xl">
-                Harness the power of AI and Knowledge to enhance your wisdom by retention and comprehension.
-              </p>
-            </div>
-            <div className="space-x-4">
-              <Button size="lg" className="bg-indigo-700 hover:bg-indigo-800" asChild>
-                <Link href="/login?tab=register">
-                  Start Free <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-              <Button variant="outline" size="lg">
-                Learn More
-              </Button>
-            </div>
-            <div className="relative mt-12 w-full max-w-5xl overflow-hidden rounded-lg border shadow-xl">
-              <Image
-                src="/placeholder.svg?height=600&width=1200"
-                width={1200}
-                height={600}
-                alt="CorePragya Dashboard"
-                className="w-full object-cover"
-              />
+          <div className="absolute inset-0 bg-[url('/Hero-image.jpg')] bg-cover bg-center opacity-5"></div>
+          <div className="container relative py-24 md:py-32 lg:py-40">
+            {/* Changed to grid layout with responsive columns */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+              {/* Text content column */}
+              <div className="flex flex-col items-center md:items-start text-center md:text-left space-y-8">
+                <div className="space-y-4">
+                  <h1 className="font-playfair text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl">
+                    Unlock Deeper Understanding with CorePragya
+                  </h1>
+                  <p className="max-w-[700px] text-lg text-muted-foreground md:text-xl">
+                    Harness the power of AI and Knowledge to enhance your wisdom by retention and comprehension.
+                  </p>
+                </div>
+                <div className="space-x-4">
+                  <Button size="lg" className="bg-indigo-700 hover:bg-indigo-800" asChild>
+                    <Link href="/login?tab=register">
+                      Start Free <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                  <Button variant="outline" size="lg">
+                    Learn More
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Image column */}
+              <div className="w-full overflow-hidden rounded-lg border shadow-xl">
+                <Image
+                  src="/Hero-image.jpg"
+                  width={1200}
+                  height={600}
+                  alt="CorePragya Dashboard"
+                  className="w-full object-cover"
+                  priority
+                />
+              </div>
             </div>
           </div>
         </section>

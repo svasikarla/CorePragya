@@ -4,21 +4,17 @@ import { toast } from "@/components/ui/use-toast";
 // Define types for knowledge entries
 export interface KnowledgeEntry {
   id: string;
-  title: string;
-  source: string;
-  summary: string;
-  summaryJson: any;
-  date: string;
-  type: string;
-  category: string;
+  title?: string;
+  category?: string;
+  created_at?: string;
+  // Add other properties as needed
 }
 
 export interface KnowledgeStats {
   totalEntries: number;
   categoryCounts: Record<string, number>;
-  recentEntries: any[];
-  topCategory: string;
-  topCategoryCount: number;
+  recentEntries: KnowledgeEntry[];
+  // Add other properties as needed
 }
 
 // Shared function to fetch knowledge entries

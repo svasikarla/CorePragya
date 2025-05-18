@@ -230,14 +230,29 @@ export default function KnowledgeBase() {
   const [rawText, setRawText] = useState("")
   const [isLoadingDetail, setIsLoadingDetail] = useState(false)
   
-  // Create a debounced function for search
+  // Create a debounced function for search - but we'll only use it for specific events
   const debouncedSetSearchQuery = useCallback(
     debounce((query) => {
       setDebouncedSearchQuery(query);
     }, 300),
     []
   )
-  
+
+  // Function to trigger search - this centralizes the search logic
+  const triggerSearch = () => {
+    if (searchQuery.trim() !== '') {
+      setDebouncedSearchQuery(searchQuery);
+    }
+  }
+
+  // Add this function to handle the Enter key press
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault(); // Prevent form submission
+      triggerSearch();
+    }
+  };
+
   useEffect(() => {
     const getUser = async () => {
       const { data: { session } } = await supabase.auth.getSession()
@@ -254,14 +269,6 @@ export default function KnowledgeBase() {
     
     getUser()
   }, [router])
-
-  // Add this function to handle the Enter key press
-  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      // Update the filtered entries when Enter is pressed
-      setDebouncedSearchQuery(searchQuery);
-    }
-  };
 
   const fetchKnowledgeBaseEntries = async (userId) => {
     try {
@@ -553,7 +560,7 @@ export default function KnowledgeBase() {
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
-                  // Remove the debouncedSetSearchQuery call here
+                  // We intentionally don't trigger search on every keystroke
                 }}
                 onKeyDown={handleSearchKeyDown}
               />
@@ -561,7 +568,7 @@ export default function KnowledgeBase() {
             <Button 
               variant="outline" 
               className="ml-2 h-10" 
-              onClick={() => setDebouncedSearchQuery(searchQuery)}
+              onClick={triggerSearch}
             >
               Search
             </Button>
@@ -822,7 +829,7 @@ export default function KnowledgeBase() {
                 ) : (
                   <>
                     <Mail className="mr-2 h-4 w-4" />
-                    Refresh from Email
+                    Refresh from Email Shared with CorePragya
                   </>
                 )}
               </Button>
@@ -972,15 +979,3 @@ export default function KnowledgeBase() {
 
 // Add this component to your JSX, just before the closing div of the main container
 // <DebugEntries entries={entries} />
-
-
-
-
-
-
-
-
-
-
-
-

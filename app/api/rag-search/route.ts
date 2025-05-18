@@ -109,7 +109,7 @@ export async function POST(request: Request) {
     
     const { data: knowledgeEntries, error: kbError } = await supabaseAdmin
       .from('knowledgebase')
-      .select('id, title, category, summary_text')
+      .select('id, title, category, summary_text, source_ref, source_type')
       .in('id', kbIds);
     
     if (kbError) {
@@ -128,7 +128,9 @@ export async function POST(request: Request) {
         similarity: chunk.similarity,
         title: knowledgeEntry?.title || 'Unknown',
         category: knowledgeEntry?.category || 'Uncategorized',
-        summary: knowledgeEntry?.summary_text || ''
+        summary: knowledgeEntry?.summary_text || '',
+        source_url: knowledgeEntry?.source_ref || '',
+        source_type: knowledgeEntry?.source_type || 'unknown'
       };
     });
     
@@ -147,7 +149,7 @@ export async function POST(request: Request) {
         messages: [
           {
             role: 'system',
-            content: 'You are an AI assistant for CorePragya, a knowledge management system. Answer the user\'s question based on the provided context. If the context doesn\'t contain relevant information, say so clearly.'
+            content: 'You are an AI assistant for CorePragya, a knowledge management system. Answer the user\'s question based on the provided context. If the context doesn\'t contain relevant information or you cannot find specific information in the context to answer the question, respond with: "I don\'t have enough information about [topic] in your knowledge base."'
           },
           {
             role: 'user',
@@ -155,7 +157,9 @@ export async function POST(request: Request) {
 ---------------------
 ${context}
 ---------------------
-Given the context information and not prior knowledge, answer the question: ${query}`
+Given the context information and not prior knowledge, answer the question: ${query}
+
+IMPORTANT: Only use information from the context above. If the context doesn't contain enough information to fully answer the question, state clearly: "I don't have enough information about [specific topic] in your knowledge base." Do not use any external knowledge.`
           }
         ],
         temperature: 0.5,

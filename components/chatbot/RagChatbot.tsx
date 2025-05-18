@@ -21,6 +21,8 @@ type Message = {
     title: string
     category: string
     similarity: number
+    source_url?: string
+    source_type?: string
   }[]
 }
 
@@ -172,7 +174,9 @@ export default function RagChatbot() {
         uniqueId: `${result.kb_id}-${index}`,
         title: result.title,
         category: result.category,
-        similarity: result.similarity
+        similarity: result.similarity,
+        source_url: result.source_url,
+        source_type: result.source_type
       })) || []
       
       // Format the response for better readability
@@ -258,13 +262,24 @@ export default function RagChatbot() {
                         </p>
                         <div className="flex flex-wrap gap-1">
                           {message.sources.map((source, sourceIndex) => (
-                            <Badge 
-                              key={`${source.uniqueId || source.id}-${sourceIndex}`}
-                              variant="outline" 
-                              className="text-xs"
-                            >
-                              {source.title}
-                            </Badge>
+                            <div key={`${source.uniqueId || source.id}-${sourceIndex}`} className="flex flex-col">
+                              <Badge 
+                                variant="outline" 
+                                className="text-xs"
+                              >
+                                {source.title}
+                              </Badge>
+                              {source.source_url && source.source_type === 'url' && (
+                                <a 
+                                  href={source.source_url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-indigo-600 hover:underline mt-1"
+                                >
+                                  View Source
+                                </a>
+                              )}
+                            </div>
                           ))}
                         </div>
                       </div>

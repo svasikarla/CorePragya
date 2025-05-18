@@ -1,119 +1,88 @@
 "use client"
 
-import { useEffect, useRef } from 'react'
-import { Chart, registerables } from 'chart.js'
+import { useEffect, useState } from "react"
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 
-// Register Chart.js components
-Chart.register(...registerables)
+interface KnowledgeEntry {
+  id: string;
+  title: string;
+  category: string;
+  created_at: string;
+}
 
-export default function KnowledgeGrowthChart({ entries }) {
-  const chartRef = useRef(null)
-  const chartInstance = useRef(null)
+interface KnowledgeGrowthChartProps {
+  entries: KnowledgeEntry[];
+}
+
+export default function KnowledgeGrowthChart({ entries }: KnowledgeGrowthChartProps) {
+  const [chartData, setChartData] = useState<Array<{ date: string; count: number }>>([])
 
   useEffect(() => {
-    if (!entries || entries.length === 0) return
-
-    // Process data to get entries by date
-    const dateMap = new Map()
-    const now = new Date()
-    const thirtyDaysAgo = new Date()
-    thirtyDaysAgo.setDate(now.getDate() - 30) // Avoid modifying 'now' directly
-    
-    // Initialize all dates in the last 30 days
-    for (let i = 0; i < 30; i++) {
-      const date = new Date(thirtyDaysAgo)
-      date.setDate(thirtyDaysAgo.getDate() + i)
-      const dateString = date.toISOString().split('T')[0]
-      dateMap.set(dateString, 0)
+    if (!entries || entries.length === 0) {
+      setChartData([])
+      return
     }
-    
-    // Count entries by date
-    entries.forEach(entry => {
-      // Add validation to ensure created_at is valid
-      if (!entry.created_at) return
-      
-      try {
-        const entryDate = new Date(entry.created_at)
-        
-        // Check if the date is valid
-        if (isNaN(entryDate.getTime())) return
-        
-        const dateString = entryDate.toISOString().split('T')[0]
-        if (dateMap.has(dateString)) {
-          dateMap.set(dateString, dateMap.get(dateString) + 1)
-        }
-      } catch (error) {
-        console.error('Invalid date format in entry:', entry.id, error)
-        // Skip this entry and continue processing others
+
+    // Group entries by date and count them
+    const entriesByDate = entries.reduce((acc, entry) => {
+      const date = new Date(entry.created_at).toLocaleDateString()
+      if (!acc[date]) {
+        acc[date] = 0
       }
+      acc[date]++
+      return acc
+    }, {} as Record<string, number>)
+
+    // Convert to array and sort by date
+    const dateEntries = Object.entries(entriesByDate)
+      .map(([date, count]) => ({ date, count }))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+
+    // Calculate cumulative count
+    let cumulativeCount = 0
+    const cumulativeData = dateEntries.map(({ date, count }) => {
+      cumulativeCount += count
+      return { date, count: cumulativeCount }
     })
-    
-    // Calculate cumulative sum
-    let cumulativeSum = 0
-    const cumulativeData = []
-    
-    dateMap.forEach((count, date) => {
-      cumulativeSum += count
-      cumulativeData.push({ date, count: cumulativeSum })
-    })
-    
-    // Sort by date
-    cumulativeData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    
-    // Create or update chart
-    if (chartRef.current) {
-      if (chartInstance.current) {
-        chartInstance.current.destroy()
-      }
 
-      const ctx = chartRef.current.getContext('2d')
-      chartInstance.current = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: cumulativeData.map(d => d.date),
-          datasets: [{
-            label: 'Total Entries',
-            data: cumulativeData.map(d => d.count),
-            borderColor: '#4F46E5',
-            backgroundColor: 'rgba(79, 70, 229, 0.1)',
-            fill: true,
-            tension: 0.4
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            x: {
-              grid: {
-                display: false
-              },
-              ticks: {
-                maxTicksLimit: 7
-              }
-            },
-            y: {
-              beginAtZero: true,
-              ticks: {
-                precision: 0
-              }
-            }
-          },
-          plugins: {
-            legend: {
-              display: false
-            }
-          }
-        }
-      })
-    }
-
-    return () => {
-      if (chartInstance.current) {
-        chartInstance.current.destroy()
-      }
-    }
+    setChartData(cumulativeData)
   }, [entries])
 
-  return <canvas ref={chartRef} />
+  // If no data, show a placeholder
+  if (chartData.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p className="text-muted-foreground text-center">
+          No growth data available yet.<br />
+          Add more knowledge entries to see growth over time.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <LineChart
+        data={chartData}
+        margin={{
+          top: 5,
+          right: 30,
+          left: 20,
+          bottom: 5,
+        }}
+      >
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis dataKey="date" />
+        <YAxis />
+        <Tooltip formatter={(value) => [`${value} entries`, 'Total']} />
+        <Line
+          type="monotone"
+          dataKey="count"
+          stroke="#6366f1"
+          activeDot={{ r: 8 }}
+          strokeWidth={2}
+        />
+      </LineChart>
+    </ResponsiveContainer>
+  )
 }

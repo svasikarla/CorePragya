@@ -56,6 +56,16 @@ export default function AppHeader({ user }: AppHeaderProps) {
             >
               Knowledge Base
             </Link>
+            <Link 
+              href="/personal-rag-bot" 
+              className={`text-sm font-medium ${
+                pathname === "/personal-rag-bot" 
+                  ? "text-foreground" 
+                  : "text-muted-foreground transition-colors hover:text-foreground"
+              }`}
+            >
+              Personal RAG Bot
+            </Link>
           </nav>
         </div>
         

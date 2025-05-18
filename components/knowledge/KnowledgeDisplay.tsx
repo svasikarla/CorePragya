@@ -1,24 +1,29 @@
-"use client"
-
 import { KnowledgeStats } from "@/lib/knowledge-utils"
-import KnowledgeStatsCard from "@/components/knowledge/KnowledgeStatsCard"
-import KnowledgeCharts from "@/components/knowledge/KnowledgeCharts"
+import KnowledgeStatsCard from "./KnowledgeStatsCard"
 
 interface KnowledgeDisplayProps {
   stats: KnowledgeStats;
-  showCharts?: boolean;
   compact?: boolean;
+  showCharts?: boolean;
 }
 
 export default function KnowledgeDisplay({ 
   stats, 
-  showCharts = false,
-  compact = false 
+  compact = false, 
+  showCharts = false 
 }: KnowledgeDisplayProps) {
+  // Ensure stats has all required properties
+  const safeStats: KnowledgeStats = {
+    totalEntries: stats?.totalEntries || 0,
+    categoryCounts: stats?.categoryCounts || {},
+    recentEntries: stats?.recentEntries || [],
+    topCategory: stats?.topCategory || 'None',
+    topCategoryCount: stats?.topCategoryCount || 0
+  };
+
   return (
-    <div className="space-y-6">
-      <KnowledgeStatsCard stats={stats} compact={compact} />
-      {showCharts && <KnowledgeCharts stats={stats} />}
+    <div>
+      <KnowledgeStatsCard stats={safeStats} compact={compact} />
     </div>
   )
 }

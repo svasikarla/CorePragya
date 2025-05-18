@@ -1,87 +1,83 @@
-import { supabase } from "@/lib/supabase/client";
-import { toast } from "@/components/ui/use-toast";
-
-// Define types for knowledge entries
-export interface KnowledgeEntry {
-  id: string;
-  title?: string;
-  category?: string;
-  created_at?: string;
-  // Add other properties as needed
-}
+import { supabase } from "@/lib/supabase/client"
 
 export interface KnowledgeStats {
   totalEntries: number;
   categoryCounts: Record<string, number>;
-  recentEntries: KnowledgeEntry[];
-  // Add other properties as needed
+  recentEntries: any[];
+  topCategory: string;
+  topCategoryCount: number;
 }
 
-// Shared function to fetch knowledge entries
-export async function fetchKnowledgeEntries(userId: string): Promise<{
-  entries: KnowledgeEntry[];
-  stats: KnowledgeStats;
-  error?: string;
-}> {
+export async function fetchKnowledgeEntries(userId: string) {
   try {
+    console.log('Fetching knowledge entries for user:', userId);
+    
+    // Fetch all entries for the user
     const { data, error } = await supabase
       .from('knowledgebase')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
-
-    // Format entries
-    const formattedEntries = data.map(item => {
-      // Parse summary_json if it's a string
-      let summaryJson = item.summary_json;
-      if (typeof summaryJson === 'string') {
-        try {
-          summaryJson = JSON.parse(summaryJson);
-        } catch (e) {
-          console.error('Error parsing summary_json:', e);
-          summaryJson = null;
-        }
-      }
-      
-      // Ensure created_at is a valid date
-      let dateStr = '';
-      try {
-        const createdAt = new Date(item.created_at);
-        if (!isNaN(createdAt.getTime())) {
-          dateStr = createdAt.toISOString().split("T")[0];
-        } else {
-          dateStr = new Date().toISOString().split("T")[0]; // Fallback to current date
-        }
-      } catch (e) {
-        console.error('Error parsing date:', e);
-        dateStr = new Date().toISOString().split("T")[0]; // Fallback to current date
-      }
-      
-      return {
-        id: item.id,
-        title: item.summary_text?.split('.')[0] || 'Untitled', // Use first sentence as title
-        source: item.source_ref || '',
-        summary: item.summary_text || '',
-        summaryJson: summaryJson,
-        date: dateStr,
-        created_at: item.created_at, // Keep the original created_at for charts
-        type: item.source_type || 'url',
-        category: item.category || 'Uncategorized',
+    if (error) {
+      console.error('Supabase error fetching knowledge entries:', error);
+      return { 
+        entries: [],
+        stats: {
+          totalEntries: 0,
+          categoryCounts: {},
+          recentEntries: [],
+          topCategory: 'None',
+          topCategoryCount: 0
+        },
+        error
       };
+    }
+
+    console.log('Fetched knowledge entries count:', data?.length || 0);
+
+    // If no data, return empty stats
+    if (!data || data.length === 0) {
+      return { 
+        entries: [],
+        stats: {
+          totalEntries: 0,
+          categoryCounts: {},
+          recentEntries: [],
+          topCategory: 'None',
+          topCategoryCount: 0
+        },
+        error: null
+      };
+    }
+
+    // Format the entries
+    const formattedEntries = data.map(entry => ({
+      id: entry.id,
+      title: entry.title || 'Untitled',
+      category: entry.category || 'Uncategorized',
+      created_at: entry.created_at,
+      summary: entry.summary_text || '',
+      summaryJson: entry.summary_json || null,
+      source: entry.source_ref || entry.source_type || 'Unknown',
+      date: new Date(entry.created_at).toISOString().split("T")[0],
+      type: entry.source_type || 'url'
+    }));
+
+    // Count entries by category
+    const categoryCounts: Record<string, number> = {};
+    data.forEach(entry => {
+      const category = entry.category || 'Uncategorized';
+      categoryCounts[category] = (categoryCounts[category] || 0) + 1;
     });
 
-    // Calculate statistics
-    const categoryCounts = data.reduce((acc, entry) => {
-      const category = entry.category || 'Uncategorized';
-      acc[category] = (acc[category] || 0) + 1;
-      return acc;
-    }, {});
-
-    // Find top category
-    const topCategoryEntry = Object.entries(categoryCounts)
-      .sort((a, b) => b[1] - a[1])[0] || ['None', 0];
+    // Find the top category
+    let topCategoryEntry: [string, number] = ['None', 0];
+    Object.entries(categoryCounts).forEach(([category, count]) => {
+      if (count > topCategoryEntry[1]) {
+        topCategoryEntry = [category, count];
+      }
+    });
 
     const stats = {
       totalEntries: data.length,
@@ -91,11 +87,11 @@ export async function fetchKnowledgeEntries(userId: string): Promise<{
       topCategoryCount: topCategoryEntry[1]
     };
 
-    return { entries: formattedEntries, stats };
+    return { entries: formattedEntries, stats, error: null };
   } catch (error) {
     console.error('Error fetching knowledge entries:', error);
     return { 
-      entries: [], 
+      entries: [],
       stats: {
         totalEntries: 0,
         categoryCounts: {},
@@ -103,7 +99,7 @@ export async function fetchKnowledgeEntries(userId: string): Promise<{
         topCategory: 'None',
         topCategoryCount: 0
       },
-      error: error.message 
+      error
     };
   }
 }

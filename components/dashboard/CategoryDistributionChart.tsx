@@ -1,76 +1,63 @@
 "use client"
 
-import { useEffect, useRef } from 'react'
-import { Chart, registerables } from 'chart.js'
+import { useEffect, useState } from "react"
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts"
 
-// Register Chart.js components
-Chart.register(...registerables)
+interface CategoryDistributionChartProps {
+  data: Record<string, number>;
+}
 
-export default function CategoryDistributionChart({ data }) {
-  const chartRef = useRef(null)
-  const chartInstance = useRef(null)
+export default function CategoryDistributionChart({ data }: CategoryDistributionChartProps) {
+  const [chartData, setChartData] = useState<Array<{ name: string; value: number }>>([])
+
+  // Colors for the pie chart
+  const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f97316', '#eab308', '#84cc16', '#10b981', '#06b6d4', '#3b82f6']
 
   useEffect(() => {
-    if (!data || Object.keys(data).length === 0) return
+    // Convert the data object to an array format for the chart
+    const formattedData = Object.entries(data).map(([name, value], index) => ({
+      name,
+      value,
+    }))
 
-    // Prepare data for chart
-    const labels = Object.keys(data)
-    const values = Object.values(data)
-    const backgroundColors = [
-      '#4F46E5', '#7C3AED', '#EC4899', '#F59E0B', '#10B981',
-      '#3B82F6', '#6366F1', '#8B5CF6', '#D946EF', '#F43F5E'
-    ]
+    // Sort by value in descending order
+    formattedData.sort((a, b) => b.value - a.value)
 
-    // Create or update chart
-    if (chartRef.current) {
-      if (chartInstance.current) {
-        chartInstance.current.destroy()
-      }
-
-      const ctx = chartRef.current.getContext('2d')
-      chartInstance.current = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-          labels,
-          datasets: [{
-            data: values,
-            backgroundColor: backgroundColors.slice(0, labels.length),
-            borderWidth: 1
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              position: 'right',
-              labels: {
-                boxWidth: 12,
-                padding: 15
-              }
-            },
-            tooltip: {
-              callbacks: {
-                label: (context) => {
-                  const label = context.label || ''
-                  const value = context.raw || 0
-                  const total = context.dataset.data.reduce((a, b) => a + b, 0)
-                  const percentage = Math.round((value / total) * 100)
-                  return `${label}: ${value} (${percentage}%)`
-                }
-              }
-            }
-          }
-        }
-      })
-    }
-
-    return () => {
-      if (chartInstance.current) {
-        chartInstance.current.destroy()
-      }
-    }
+    setChartData(formattedData)
   }, [data])
 
-  return <canvas ref={chartRef} />
+  // If no data, show a placeholder
+  if (chartData.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p className="text-muted-foreground text-center">
+          No category data available yet.<br />
+          Add more knowledge entries to see distribution.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <PieChart>
+        <Pie
+          data={chartData}
+          cx="50%"
+          cy="50%"
+          labelLine={false}
+          outerRadius={80}
+          fill="#8884d8"
+          dataKey="value"
+          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+        >
+          {chartData.map((entry, index) => (
+            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+          ))}
+        </Pie>
+        <Tooltip formatter={(value) => [`${value} entries`, 'Count']} />
+        <Legend />
+      </PieChart>
+    </ResponsiveContainer>
+  )
 }

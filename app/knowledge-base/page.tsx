@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -21,6 +21,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import debounce from "lodash/debounce"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
 
 // Create a helper component to render the summary JSON as bullet points
 const SummaryBullets = ({ summaryJson }) => {
@@ -198,7 +206,7 @@ export default function KnowledgeBase() {
   const router = useRouter()
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [entries, setEntries] = useState([])
+  const [entries, setEntries] = useState([]) // Initialize as empty array instead of undefined
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState(null)
   const [typeFilter, setTypeFilter] = useState('all')
@@ -214,6 +222,21 @@ export default function KnowledgeBase() {
     topCategoryCount: 0
   })
   const { toast } = useToast()
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("")
+  
+  // Add all new state variables here, at the top level with other state declarations
+  const [selectedEntry, setSelectedEntry] = useState(null)
+  const [isDetailOpen, setIsDetailOpen] = useState(false)
+  const [rawText, setRawText] = useState("")
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false)
+  
+  // Create a debounced function for search
+  const debouncedSetSearchQuery = useCallback(
+    debounce((query) => {
+      setDebouncedSearchQuery(query);
+    }, 300),
+    []
+  )
   
   useEffect(() => {
     const getUser = async () => {
@@ -232,18 +255,52 @@ export default function KnowledgeBase() {
     getUser()
   }, [router])
 
+  // Add this function to handle the Enter key press
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      // Update the filtered entries when Enter is pressed
+      setDebouncedSearchQuery(searchQuery);
+    }
+  };
+
   const fetchKnowledgeBaseEntries = async (userId) => {
-    const { entries, stats, error } = await fetchKnowledgeEntries(userId);
-    if (error) {
+    try {
+      const { entries, stats, error } = await fetchKnowledgeEntries(userId);
+      
+      console.log('Fetched entries:', entries);
+      console.log('Stats:', stats);
+      
+      if (error) {
+        console.error('Error from fetchKnowledgeEntries:', error);
+        toast({
+          title: "Error loading entries",
+          description: "Failed to load your knowledge base entries.",
+          variant: "destructive",
+        });
+        // Return early but ensure entries is set to an empty array
+        setEntries([]);
+        return;
+      }
+      
+      // Make sure entries is always an array
+      setEntries(entries || []);
+      setKnowledgeStats(stats || {
+        totalEntries: 0,
+        categoryCounts: {},
+        recentEntries: [],
+        topCategory: 'None',
+        topCategoryCount: 0
+      });
+    } catch (error) {
+      console.error('Error in fetchKnowledgeBaseEntries:', error);
+      // Ensure entries is set to an empty array on error
+      setEntries([]);
       toast({
         title: "Error loading entries",
         description: "Failed to load your knowledge base entries.",
         variant: "destructive",
       });
-      return;
     }
-    setEntries(entries);
-    setKnowledgeStats(stats);
   };
   
   const handleSignOut = () => {
@@ -265,6 +322,9 @@ export default function KnowledgeBase() {
       if (!session) {
         throw new Error('You must be logged in to add URLs');
       }
+
+      console.log('Adding URL:', url);
+      console.log('User ID:', session.user.id);
 
       // Call our API endpoint with the auth token
       const response = await fetch('/api/process-url', {
@@ -293,6 +353,8 @@ export default function KnowledgeBase() {
       try {
         const jsonResponse = await response.json();
         responseData = jsonResponse.data;
+        
+        console.log('Response data:', responseData);
 
         if (!responseData || !responseData.id || !responseData.summary_text) {
           throw new Error('Invalid response data from server');
@@ -305,7 +367,7 @@ export default function KnowledgeBase() {
       // Create a new entry for the UI
       const newEntry = {
         id: responseData.id,
-        title: responseData.summary_text.split('.')[0] || 'Untitled', // Use first sentence as title with fallback
+        title: responseData.title || responseData.summary_text.split('.')[0] || 'Untitled', // Use title or first sentence as title with fallback
         source: url,
         summary: responseData.summary_text,
         summaryJson: responseData.summary_json, // Include the summary_json field
@@ -314,8 +376,16 @@ export default function KnowledgeBase() {
         category: responseData.category || 'Uncategorized', // Include the category
       };
 
-      setEntries([newEntry, ...entries]);
+      console.log('New entry created:', newEntry);
+      
+      // Update the entries state with the new entry
+      setEntries(prevEntries => [newEntry, ...prevEntries]);
       setUrl("");
+
+      // Refresh the knowledge base to ensure we have the latest data
+      if (user?.id) {
+        await fetchKnowledgeBaseEntries(user.id);
+      }
 
       toast({
         title: "URL added to Knowledge Base",
@@ -325,7 +395,7 @@ export default function KnowledgeBase() {
       console.error('Error adding URL:', error);
       toast({
         title: "Error adding URL",
-        description: error.message || "Failed to process the URL. Please try again.",
+        description: error.message || "Failed to add URL. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -426,12 +496,15 @@ export default function KnowledgeBase() {
   };
 
   const getFilteredEntries = () => {
-    return entries
+    // Ensure entries is always an array before filtering
+    const entriesArray = entries || [];
+    
+    return entriesArray
       .filter((entry) => {
-        // Text search filter
+        // Text search filter - use debouncedSearchQuery instead
         const matchesSearch =
-          entry.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          entry.summary.toLowerCase().includes(searchQuery.toLowerCase());
+          entry.title.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+          entry.summary.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
 
         // Category filter
         const matchesCategory = !selectedCategory || entry.category === selectedCategory;
@@ -453,7 +526,7 @@ export default function KnowledgeBase() {
       });
   };
 
-  const filteredEntries = getFilteredEntries();
+  const filteredEntries = entries ? getFilteredEntries() : [];
 
   if (loading) {
     return (
@@ -470,15 +543,28 @@ export default function KnowledgeBase() {
     return (
       <div className="mb-4 space-y-3">
         <div className="flex flex-col space-y-3 md:flex-row md:items-center md:justify-between md:space-y-0">
-          <div className="relative w-full md:w-64">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search knowledge..."
-              className="pl-9 h-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+          <div className="relative w-full md:w-64 flex">
+            <div className="relative flex-grow">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search knowledge..."
+                className="pl-9 h-10"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  // Remove the debouncedSetSearchQuery call here
+                }}
+                onKeyDown={handleSearchKeyDown}
+              />
+            </div>
+            <Button 
+              variant="outline" 
+              className="ml-2 h-10" 
+              onClick={() => setDebouncedSearchQuery(searchQuery)}
+            >
+              Search
+            </Button>
           </div>
           
           <div className="flex items-center space-x-2">
@@ -630,6 +716,44 @@ export default function KnowledgeBase() {
     );
   };
 
+  // Add this function to handle the Read More button click
+  const handleReadMore = async (entry) => {
+    setSelectedEntry(entry);
+    setIsDetailOpen(true);
+    setIsLoadingDetail(true);
+    
+    try {
+      // Fetch the raw_text from Supabase
+      const { data, error } = await supabase
+        .from('knowledgebase')
+        .select('raw_text')
+        .eq('id', entry.id)
+        .single();
+      
+      if (error) throw error;
+      
+      // Format the raw text - split into paragraphs
+      const formattedText = data.raw_text 
+        ? data.raw_text
+            .split('\n')
+            .filter(para => para.trim().length > 0)
+            .join('\n\n')
+        : "No content available";
+      
+      setRawText(formattedText);
+    } catch (error) {
+      console.error('Error fetching entry details:', error);
+      setRawText("Failed to load content. Please try again.");
+      toast({
+        title: "Error loading content",
+        description: "Could not load the full content for this entry.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingDetail(false);
+    }
+  };
+
   return (
     <AppLayout user={user}>
       <div className="container py-6 px-4 sm:px-6">
@@ -641,7 +765,7 @@ export default function KnowledgeBase() {
         </div>
 
         {/* Knowledge Stats Dashboard - only show if entries exist */}
-        {entries.length > 0 && <KnowledgeDisplay stats={knowledgeStats} compact={true} />}
+        {entries && entries.length > 0 && <KnowledgeDisplay stats={knowledgeStats} compact={true} />}
 
         <div className="grid gap-6 mb-8 md:grid-cols-2">
           <Card>
@@ -774,7 +898,11 @@ export default function KnowledgeBase() {
                   <div className="text-xs text-muted-foreground">
                     {new Date(entry.date).toLocaleDateString()}
                   </div>
-                  <Button variant="link" className="h-8 p-0 text-indigo-700">
+                  <Button 
+                    variant="link" 
+                    className="h-8 p-0 text-indigo-700"
+                    onClick={() => handleReadMore(entry)}
+                  >
                     Read More <ChevronRight className="ml-1 h-3 w-3" />
                   </Button>
                 </CardFooter>
@@ -783,6 +911,61 @@ export default function KnowledgeBase() {
           </div>
         )}
       </div>
+      {selectedEntry && (
+        <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold">{selectedEntry.title}</DialogTitle>
+              <div className="flex flex-wrap gap-2 mt-2">
+                <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getCategoryColor(selectedEntry.category)}`}>
+                  {selectedEntry.category}
+                </span>
+                {selectedEntry.type === "url" ? (
+                  <Link 
+                    href={selectedEntry.source} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 hover:bg-gray-200 transition-colors"
+                  >
+                    <Globe className="mr-1 h-3 w-3" /> Source
+                  </Link>
+                ) : (
+                  <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800">
+                    <Mail className="mr-1 h-3 w-3" /> Email
+                  </span>
+                )}
+                <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800">
+                  {new Date(selectedEntry.date).toLocaleDateString()}
+                </span>
+              </div>
+            </DialogHeader>
+            
+            <div className="mt-4">
+              <h3 className="text-sm font-semibold mb-2">Summary</h3>
+              <div className="bg-gray-50 p-3 rounded-md mb-4">
+                {selectedEntry.summaryJson ? (
+                  <SummaryBullets summaryJson={selectedEntry.summaryJson} />
+                ) : (
+                  <p className="text-sm text-muted-foreground">{selectedEntry.summary}</p>
+                )}
+              </div>
+              
+              <h3 className="text-sm font-semibold mb-2">Full Content</h3>
+              {isLoadingDetail ? (
+                <div className="flex justify-center py-8">
+                  <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <div className="prose prose-sm max-w-none">
+                  {rawText.split('\n\n').map((paragraph, index) => (
+                    <p key={index} className="mb-3">{paragraph}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </AppLayout>
   )
 }

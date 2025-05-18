@@ -1,8 +1,6 @@
-"use client"
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Database, BarChart, Calendar, Clock } from "lucide-react"
 import { KnowledgeStats } from "@/lib/knowledge-utils"
+import { Database, BookOpen, BarChart } from "lucide-react"
 
 interface KnowledgeStatsCardProps {
   stats: KnowledgeStats;
@@ -10,7 +8,11 @@ interface KnowledgeStatsCardProps {
 }
 
 export default function KnowledgeStatsCard({ stats, compact = false }: KnowledgeStatsCardProps) {
-  const { totalEntries, topCategory, topCategoryCount, recentEntries } = stats
+  // Ensure we have valid stats
+  const totalEntries = stats?.totalEntries || 0;
+  const topCategory = stats?.topCategory || 'None';
+  const topCategoryCount = stats?.topCategoryCount || 0;
+  const recentEntries = stats?.recentEntries || [];
   
   return (
     <Card className={compact ? "mb-6" : "mb-8"}>
@@ -34,15 +36,15 @@ export default function KnowledgeStatsCard({ stats, compact = false }: Knowledge
           
           <div className="flex items-center space-x-3">
             <div className={`${compact ? "h-10 w-10" : "h-12 w-12"} bg-indigo-100 rounded-full flex items-center justify-center`}>
-              <BarChart className={`${compact ? "h-5 w-5" : "h-6 w-6"} text-indigo-700`} />
+              <BookOpen className={`${compact ? "h-5 w-5" : "h-6 w-6"} text-indigo-700`} />
             </div>
             <div>
               <p className={`${compact ? "text-xs" : "text-sm"} text-muted-foreground`}>Top Category</p>
               <h3 className={`${compact ? "text-xl" : "text-2xl"} font-bold`}>
                 {topCategory !== 'None' ? (
-                  <span>
+                  <>
                     {topCategory} <span className="text-sm font-normal text-muted-foreground">({topCategoryCount})</span>
-                  </span>
+                  </>
                 ) : (
                   'None'
                 )}
@@ -52,14 +54,16 @@ export default function KnowledgeStatsCard({ stats, compact = false }: Knowledge
           
           <div className="flex items-center space-x-3">
             <div className={`${compact ? "h-10 w-10" : "h-12 w-12"} bg-indigo-100 rounded-full flex items-center justify-center`}>
-              <Calendar className={`${compact ? "h-5 w-5" : "h-6 w-6"} text-indigo-700`} />
+              <BarChart className={`${compact ? "h-5 w-5" : "h-6 w-6"} text-indigo-700`} />
             </div>
             <div>
               <p className={`${compact ? "text-xs" : "text-sm"} text-muted-foreground`}>Last Updated</p>
-              <h3 className={`${compact ? "text-lg" : "text-xl"} font-bold`}>
-                {recentEntries[0]?.created_at 
-                  ? new Date(recentEntries[0].created_at).toLocaleDateString() 
-                  : 'No entries'}
+              <h3 className={`${compact ? "text-xl" : "text-2xl"} font-bold`}>
+                {recentEntries.length > 0 ? (
+                  new Date(recentEntries[0].created_at).toLocaleDateString()
+                ) : (
+                  'No entries'
+                )}
               </h3>
             </div>
           </div>
